@@ -1,5 +1,7 @@
 // "use client";
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../firebaseConfig';
 import { AuthService } from '../services/utils/AuthService';
 
 const SecureAuthContext = createContext();
@@ -71,16 +73,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    loadMe();
+    // Wait for Firebase Auth to restore session before fetching user data
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        loadMe();
+      } else {
+        setUser({
+          isLoggedIn: false,
+          email: '',
+          name: '',
+          isTutor: false,
+          role: 'Student',
+          uid: null,
+        });
+        setLoading(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const login = async ({ email, password }) => {
+  const login = useCallback(async ({ email, password }) => {
+    // onAuthStateChanged will automatically call loadMe() after sign-in
     const result = await AuthService.signIn(email, password);
-    await loadMe();
     return result;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await AuthService.signOut();
     setUser({
       isLoggedIn: false,
@@ -90,25 +108,27 @@ export const AuthProvider = ({ children }) => {
       role: 'Student',
       uid: null,
     });
-  };
+  }, []);
 
-  const loginGoogle = async (token) => {
-    const result = await AuthService.googleLogin(token);
-    await loadMe(); 
-    return result;
-};
+  const loginGoogle = useCallback(async (_token) => {
+    console.warn('Google login is not yet implemented');
+    return { success: false, error: 'Google login not implemented' };
+  }, []);
 
-  const updateUserRole = async (isTutor) => {
+  const updateUserRole = useCallback(async (isTutor) => {
     if (!user.isLoggedIn) return;
     const res = await AuthService.updateRole(isTutor);
     await loadMe();
     return res;
-  };
+  }, [user.isLoggedIn]);
 
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     await loadMe();
-  };
+  }, []);
 
-const value = { user, loading, login, loginGoogle, logout, updateUserRole, refreshUserData };
+  const value = useMemo(() => (
+    { user, loading, login, loginGoogle, logout, updateUserRole, refreshUserData }
+  ), [user, loading, login, loginGoogle, logout, updateUserRole, refreshUserData]);
+
   return <SecureAuthContext.Provider value={value}>{children}</SecureAuthContext.Provider>;
 };

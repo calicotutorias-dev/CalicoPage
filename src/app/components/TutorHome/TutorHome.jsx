@@ -52,24 +52,24 @@ export default function TutorHome({ userName }) {
     const loadData = async () => {
       try {
         setLoading(true);
-        
-        // Load courses
-        const coursesData = await getMaterias();
-        if (Array.isArray(coursesData)) {
-          setMaterias(coursesData);
-        } else {
-          console.warn('getMaterias returned non-array:', coursesData);
-          setMaterias([]);
-        }
-        
-        // Load weekly performance data and general stats if user is logged in
+
+        // Run all data fetches in parallel
+        const promises = [getMaterias()];
         if (user?.email) {
-          const [performanceData, statsData] = await Promise.all([
+          promises.push(
             TutoringSessionService.getTutorWeeklyPerformance(user.email),
             TutoringSessionService.getTutorSessionStats(user.email)
-          ]);
-          setWeeklyPerformance(performanceData);
-          setTutorStats(statsData);
+          );
+        }
+
+        const results = await Promise.all(promises);
+
+        const coursesData = results[0];
+        setMaterias(Array.isArray(coursesData) ? coursesData : []);
+
+        if (user?.email && results.length === 3) {
+          setWeeklyPerformance(results[1]);
+          setTutorStats(results[2]);
         }
       } catch (error) {
         console.error('Error loading tutor home data:', error);

@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/SecureAuthContext'; 
-import { useI18n } from '../../../lib/i18n'; 
+import Link from 'next/link';
+import { useAuth } from '../../context/SecureAuthContext';
+import { useI18n } from '../../../lib/i18n';
 import routes from '../../../routes'; 
 import { FcGoogle } from "react-icons/fc";
 import CalicoLogo from "../../../../public/CalicoLogo.png";
@@ -234,7 +235,7 @@ const Register = () => {
             {t('auth.register.registerButton')}
           </button>
         </form>
-        <div className='flex gap-1 pt-3'><p className='text-gray-500'>{t('auth.register.alreadyHaveAccount')} </p> <p onClick={()=>router.push(routes.LOGIN)} className='text-orange-600 underline hover:cursor-pointer'> {t('auth.register.signIn')}</p></div>  
+        <div className='flex gap-1 pt-3'><p className='text-gray-500'>{t('auth.register.alreadyHaveAccount')} </p> <Link href={routes.LOGIN} className='text-orange-600 underline hover:cursor-pointer'> {t('auth.register.signIn')}</Link></div>  
       </div>
 
       </div>

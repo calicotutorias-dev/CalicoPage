@@ -1,25 +1,19 @@
-import { API_URL } from '../../../config/api';
+import { authFetch } from '../authFetch';
+
+const API_URL = '/api';
 
 export const GoogleDriveService = {
   uploadPaymentProofFile: async (sessionId, file) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('sessionId', sessionId);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('sessionId', sessionId);
 
-      const response = await fetch(`${API_URL}/drive/upload-proof`, {
-        method: 'POST',
-        body: formData,
-      });
+    const { ok, data } = await authFetch(`${API_URL}/drive/upload-proof`, {
+      method: 'POST',
+      body: formData,
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to upload file');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error uploading file to Google Drive:', error);
-      return { success: false, error: error.message };
-    }
-  }
+    if (ok && data) return data;
+    return { success: false, error: data?.error || 'Failed to upload file' };
+  },
 };

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '../../context/SecureAuthContext';
 import { useI18n } from '../../../lib/i18n';
 import routes from '../../../routes';
@@ -127,12 +128,12 @@ export default function Login() {
           </form>
           <p className="login-text">
             {t('auth.login.noAccount')}
-            <span
+            <Link
               className="login-link"
-              onClick={() => router.push(routes.REGISTER)}
+              href={routes.REGISTER}
             >
               &nbsp;{t('auth.login.signUp')}
-            </span>
+            </Link>
           </p>
         </div>
       </section>

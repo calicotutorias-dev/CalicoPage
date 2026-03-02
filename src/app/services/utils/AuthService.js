@@ -230,7 +230,7 @@ export const AuthService = {
                 console.log('[AuthService] Token expired, refreshing...');
                 token = await auth.currentUser.getIdToken(true); // Force refresh
                 TokenManager.saveToken(token);
-                
+
                 // Retry the request with new token
                 const retryResponse = await fetch(`${baseUrl}/users/${uid}`, {
                   method: 'GET',
@@ -239,7 +239,7 @@ export const AuthService = {
                     'Authorization': `Bearer ${token}`,
                   },
                 });
-                
+
                 if (retryResponse.ok) {
                   const retryData = await retryResponse.json();
                   return retryData;
@@ -248,14 +248,14 @@ export const AuthService = {
                 console.error('[AuthService] Error refreshing token:', refreshError);
               }
             }
-            
+
             // If refresh failed, clear token
             TokenManager.removeToken();
           }
-          
-          // If user not found (404), use Firebase fallback
-          if (response.status === 404) {
-            console.warn('[AuthService] User not found in database, using Firebase data');
+
+          // For 403, 404, or 500 with permission errors — use Firebase fallback
+          if (response.status === 403 || response.status === 404 || response.status === 500) {
+            console.warn(`[AuthService] Server error ${response.status}, using Firebase fallback`);
             if (auth.currentUser) {
               return {
                 success: true,
@@ -272,9 +272,9 @@ export const AuthService = {
               };
             }
           }
-          
-          const errorText = await response.text();
-          throw new Error(errorText || `HTTP error! status: ${response.status}`);
+
+          // For any other error, return failure gracefully instead of throwing
+          return { success: false, error: `Server error: ${response.status}` };
         }
 
         const data = await response.json();

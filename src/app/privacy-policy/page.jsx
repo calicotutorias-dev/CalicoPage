@@ -1,17 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import styles from "./privacy-policy.module.css";
 
 export default function PrivacyPolicy() {
-  const router = useRouter();
-
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <button onClick={() => router.push("/")} className={styles.backButton}>
+        <Link href="/" className={styles.backButton}>
           ← Volver al inicio
-        </button>
+        </Link>
       </header>
 
       <main className={styles.main}>

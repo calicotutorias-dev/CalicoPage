@@ -22,7 +22,9 @@ export async function initializeAuth() {
     // Load calendar ID from environment
     calendarId = process.env.CALICO_CALENDAR_ID || null;
 
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REFRESH_TOKEN) {
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN || process.env.GOOGLE_ADMIN_REFRESH_TOKEN;
+
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !refreshToken) {
       console.warn('⚠️ Google Calendar Service Account credentials are not fully configured in environment variables.');
       return null;
     }
@@ -31,12 +33,12 @@ export async function initializeAuth() {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      'https://developers.google.com/oauthplayground' // El redirect URI que usaste
+      'https://developers.google.com/oauthplayground'
     );
 
     // Configuramos el cliente con el token permanente
     oauth2Client.setCredentials({
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN
+      refresh_token: refreshToken
     });
 
     auth = oauth2Client;

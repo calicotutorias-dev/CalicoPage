@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GoogleDriveService } from '@/app/services/utils/GoogleDriveService';
+import { GoogleDriveService } from '../../services/utils/GoogleDriveService';
 
 /**
  * Componente para manejar la conexión de Google Drive

@@ -1,0 +1,16 @@
+export default function RegisterLoading() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f9fafb' }}>
+      <div style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+        <div style={{ height: '48px', width: '200px', background: '#e5e7eb', borderRadius: '8px', margin: '0 auto 2rem' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ height: '40px', background: '#e5e7eb', borderRadius: '8px' }} />
+          <div style={{ height: '40px', background: '#e5e7eb', borderRadius: '8px' }} />
+          <div style={{ height: '40px', background: '#e5e7eb', borderRadius: '8px' }} />
+          <div style={{ height: '40px', background: '#e5e7eb', borderRadius: '8px' }} />
+          <div style={{ height: '44px', background: '#e5e7eb', borderRadius: '8px', marginTop: '0.5rem' }} />
+        </div>
+      </div>
+    </div>
+  );
+}

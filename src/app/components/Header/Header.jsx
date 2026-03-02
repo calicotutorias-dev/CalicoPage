@@ -195,36 +195,30 @@ export default function Header() {
             ) : (
               <StudentNotificationDropdown />
             )}
-            <button
+            <Link
+              href={routes.PROFILE}
               className="profile-btn"
-              onClick={() => {
-                setMenuOpen(false);
-                router.push(routes.PROFILE);
-              }}
+              onClick={() => setMenuOpen(false)}
             >
               <UserRound size={20} />
-            </button>
+            </Link>
           </div>
         ) : (
           <div className="auth-buttons">
-            <button
+            <Link
+              href={routes.LOGIN}
               className="btn-header"
-              onClick={() => {
-                setMenuOpen(false);
-                router.push(routes.LOGIN);
-              }}
+              onClick={() => setMenuOpen(false)}
             >
               {t('header.auth.login')}
-            </button>
-            <button
+            </Link>
+            <Link
+              href={routes.REGISTER}
               className="btn-header btn-header--primary"
-              onClick={() => {
-                setMenuOpen(false);
-                router.push(routes.REGISTER);
-              }}
+              onClick={() => setMenuOpen(false)}
             >
               {t('header.auth.register')}
-            </button>
+            </Link>
           </div>
         )}
       </div>

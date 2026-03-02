@@ -1,14 +1,9 @@
-import { API_URL } from '../../../config/api';
+import { authFetch } from '../authFetch';
+
+const API_URL = '/api';
 
 export const getMaterias = async () => {
-  try {
-    const response = await fetch(`${API_URL}/courses`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch courses');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching courses:', error);
-    return [];
-  }
+  const { ok, data } = await authFetch(`${API_URL}/courses`);
+  if (!ok || !data) return [];
+  return data;
 };

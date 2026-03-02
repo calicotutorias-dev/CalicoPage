@@ -1,65 +1,47 @@
 /**
  * AvailabilityService (Frontend)
- * API client for availability operations - calls local Next.js API routes
+ *
+ * API client for availability operations - calls local Next.js API routes.
+ * Uses authFetch to automatically inject the Firebase ID token.
+ * Never throws on HTTP errors — returns graceful defaults instead.
  */
+
+import { authFetch } from '../authFetch';
 
 class AvailabilityServiceClass {
   constructor() {
     this.autoSyncInterval = null;
-    this.apiBase = '/api'; // Local API routes
+    this.apiBase = '/api';
   }
 
   /**
    * Get all availabilities with optional filtering
-   * @param {string} tutorId - Optional tutor ID
-   * @param {string} course - Optional course to filter by
-   * @param {string} startDate - Optional start date (ISO string)
-   * @param {string} endDate - Optional end date (ISO string)
-   * @param {number} limit - Optional limit
-   * @returns {Promise<Array>} Array of availability slots
    */
   async getAvailabilities(tutorId = null, course = null, startDate = null, endDate = null, limit = null) {
-    try {
-      const params = new URLSearchParams();
-      if (tutorId) params.append('tutorId', tutorId);
-      if (course) params.append('course', course);
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      if (limit) params.append('limit', limit.toString());
-      const queryString = params.toString();
-      const url = `${this.apiBase}/availability${queryString ? `?${queryString}` : ''}`;
+    const params = new URLSearchParams();
+    if (tutorId) params.append('tutorId', tutorId);
+    if (course) params.append('course', course);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (limit) params.append('limit', limit.toString());
+    const qs = params.toString();
+    const url = `${this.apiBase}/availability${qs ? `?${qs}` : ''}`;
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+    const { ok, data } = await authFetch(url);
+    if (ok && data) {
       return data.availabilities || [];
-    } catch (error) {
-      console.error('Error fetching availabilities:', error);
-        throw error;
     }
+    return [];
   }
 
   /**
    * Get availability with fallback to handle errors gracefully
-   * @param {string} tutorId - Optional tutor ID
-   * @returns {Promise<Object>} Object with availabilitySlots, connected status, etc.
    */
   async getAvailabilityWithFallback(tutorId = null) {
     try {
       const availabilities = await this.getAvailabilities(tutorId);
-      
-      // Transform backend data to frontend format
-      const availabilitySlots = availabilities.map(avail => ({
+
+      const availabilitySlots = availabilities.map((avail) => ({
         id: avail.id || avail.googleEventId,
         title: avail.title || 'Available',
         date: this.extractDate(avail.startDateTime),
@@ -82,7 +64,6 @@ class AvailabilityServiceClass {
       };
     } catch (error) {
       console.error('Error in getAvailabilityWithFallback:', error);
-      
       return {
         availabilitySlots: [],
         connected: false,
@@ -95,194 +76,93 @@ class AvailabilityServiceClass {
 
   /**
    * Check if an event exists
-   * @param {string} eventId - Event ID to check
-   * @returns {Promise<boolean>} True if event exists
    */
   async checkEventExists(eventId) {
-    try {
-      const params = new URLSearchParams();
-      params.append('eventId', eventId);
-      const queryString = params.toString();
-      const url = `${this.apiBase}/availability/check-event?${queryString}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+    const params = new URLSearchParams({ eventId });
+    const { ok, data } = await authFetch(`${this.apiBase}/availability/check-event?${params.toString()}`);
+    if (ok && data) {
       return data.exists || false;
-    } catch (error) {
-      console.error('Error checking event existence:', error);
-      return false;
     }
+    return false;
   }
 
   /**
    * Sync availabilities from Google Calendar
-   * @param {string} tutorId - Tutor ID
-   * @param {string} accessToken - Access token for Google Calendar
-   * @param {string} calendarId - Optional calendar ID
-   * @returns {Promise<Object>} Sync results
    */
   async syncAvailabilities(tutorId, accessToken, calendarId = null) {
-    try {
-      const body = { tutorId, accessToken };
-      if (calendarId) body.calendarId = calendarId;
-      
-      const response = await fetch(`${this.apiBase}/availability/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
+    const body = { tutorId, accessToken };
+    if (calendarId) body.calendarId = calendarId;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
+    const { ok, data } = await authFetch(`${this.apiBase}/availability/sync`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error syncing availabilities:', error);
-      throw error;
-    }
+    if (ok && data) return data;
+    console.error('Error syncing availabilities');
+    return { success: false, error: data?.error || 'Sync failed' };
   }
 
   /**
    * Intelligent sync - only syncs new events
-   * @param {string} tutorId - Tutor ID
-   * @param {string} accessToken - Access token for Google Calendar
-   * @param {string} calendarName - Optional calendar name (e.g., "Disponibilidad")
-   * @param {number} daysAhead - Optional number of days to sync ahead (default: 30)
-   * @returns {Promise<Object>} Sync results
    */
-  async intelligentSync(tutorId, accessToken, calendarName = "Disponibilidad", daysAhead = 30) {
-    try {
-      const body = { tutorId, accessToken, daysAhead };
-      if (calendarName) body.calendarName = calendarName;
-      
-      const response = await fetch(`${this.apiBase}/availability/sync-intelligent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
+  async intelligentSync(tutorId, accessToken, calendarName = 'Disponibilidad', daysAhead = 30) {
+    const body = { tutorId, accessToken, daysAhead };
+    if (calendarName) body.calendarName = calendarName;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
+    const { ok, data } = await authFetch(`${this.apiBase}/availability/sync-intelligent`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error in intelligent sync:', error);
-      throw error;
-    }
+    if (ok && data) return data;
+    console.error('Error in intelligent sync');
+    return { success: false, error: data?.error || 'Intelligent sync failed' };
   }
 
   /**
    * Create availability event in Google Calendar and Firebase
-   * @param {string} tutorId - Tutor ID
-   * @param {string} accessToken - Access token for Google Calendar
-   * @param {Object} eventData - Event data (title, date, startTime, endTime, etc.)
-   * @returns {Promise<Object>} Created event result
    */
   async createAvailabilityEvent(tutorId, accessToken, eventData) {
-    try {
-      const body = {
-        tutorId,
-        accessToken,
-        ...eventData,
-      };
-      
-      const response = await fetch(`${this.apiBase}/availability/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
+    const body = { tutorId, accessToken, ...eventData };
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
+    const { ok, data } = await authFetch(`${this.apiBase}/availability/create`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating availability event:', error);
-      throw error;
-    }
+    if (ok && data) return data;
+    console.error('Error creating availability event');
+    return { success: false, error: data?.error || 'Failed to create event' };
   }
 
   /**
    * Delete availability event from Google Calendar and Firebase
-   * @param {string} eventId - Event ID to delete
-   * @param {string} accessToken - Access token for Google Calendar
-   * @param {string} calendarId - Optional calendar ID
-   * @returns {Promise<Object>} Delete result
    */
   async deleteAvailabilityEvent(eventId, accessToken, calendarId = null) {
-    try {
-      const params = new URLSearchParams();
-      params.append('eventId', eventId);
-      if (calendarId) params.append('calendarId', calendarId);
-      const queryString = params.toString();
-      const url = `${this.apiBase}/availability/delete?${queryString}`;
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ accessToken }),
-      });
+    const params = new URLSearchParams({ eventId });
+    if (calendarId) params.append('calendarId', calendarId);
+    const url = `${this.apiBase}/availability/delete?${params.toString()}`;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
+    const { ok, data } = await authFetch(url, {
+      method: 'DELETE',
+      body: JSON.stringify({ accessToken }),
+    });
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error deleting availability event:', error);
-      throw error;
-    }
+    if (ok && data) return data;
+    console.error('Error deleting availability event');
+    return { success: false, error: data?.error || 'Failed to delete event' };
   }
 
   /**
    * Validate event data before creation
-   * @param {Object} eventData - Event data to validate
-   * @returns {Object} Validation result { isValid, errors }
    */
   validateEventData(eventData) {
     const errors = [];
 
-    if (!eventData.date) {
-      errors.push('La fecha es requerida');
-    }
-
-    if (!eventData.startTime) {
-      errors.push('La hora de inicio es requerida');
-    }
-
-    if (!eventData.endTime) {
-      errors.push('La hora de fin es requerida');
-    }
+    if (!eventData.date) errors.push('La fecha es requerida');
+    if (!eventData.startTime) errors.push('La hora de inicio es requerida');
+    if (!eventData.endTime) errors.push('La hora de fin es requerida');
 
     if (eventData.startTime && eventData.endTime) {
       const startTime = new Date(`2000-01-01T${eventData.startTime}`);
@@ -301,17 +181,11 @@ class AvailabilityServiceClass {
       }
     }
 
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
+    return { isValid: errors.length === 0, errors };
   }
 
   /**
    * Start auto-sync (polls for updates periodically)
-   * @param {string} tutorId - Tutor ID
-   * @param {string} accessToken - Access token
-   * @param {number} interval - Interval in milliseconds (default: 5 minutes)
    */
   startAutoSync(tutorId, accessToken, interval = 300000) {
     if (this.autoSyncInterval) {
@@ -319,15 +193,8 @@ class AvailabilityServiceClass {
     }
 
     this.autoSyncInterval = setInterval(async () => {
-      try {
-        await this.syncAvailabilities(tutorId, accessToken);
-        console.log('Auto-sync completed for', tutorId);
-      } catch (error) {
-        console.error('Auto-sync failed:', error);
-      }
+      await this.syncAvailabilities(tutorId, accessToken);
     }, interval);
-
-    console.log(`Auto-sync started for ${tutorId} with interval ${interval}ms`);
   }
 
   /**
@@ -337,44 +204,30 @@ class AvailabilityServiceClass {
     if (this.autoSyncInterval) {
       clearInterval(this.autoSyncInterval);
       this.autoSyncInterval = null;
-      console.log('Auto-sync stopped');
     }
   }
 
-  /**
-   * Helper: Extract date in YYYY-MM-DD format from datetime string
-   */
+  /** Helper: Extract date in YYYY-MM-DD format */
   extractDate(datetime) {
     if (!datetime) return '';
     try {
-      const date = new Date(datetime);
-      return date.toISOString().split('T')[0];
-    } catch (error) {
-      console.error('Error extracting date:', error);
+      return new Date(datetime).toISOString().split('T')[0];
+    } catch {
       return '';
     }
   }
 
-  /**
-   * Helper: Extract time in HH:MM format from datetime string
-   */
+  /** Helper: Extract time in HH:MM format */
   extractTime(datetime) {
     if (!datetime) return '';
     try {
-      const date = new Date(datetime);
-      return date.toTimeString().slice(0, 5);
-    } catch (error) {
-      console.error('Error extracting time:', error);
+      return new Date(datetime).toTimeString().slice(0, 5);
+    } catch {
       return '';
     }
   }
 }
 
-// Create singleton instance
 const AvailabilityService = new AvailabilityServiceClass();
-
-// Named export for components that use: import { AvailabilityService } from '...'
 export { AvailabilityService };
-
-// Default export for components that use: import AvailabilityService from '...'
 export default AvailabilityService;

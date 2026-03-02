@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { initializeFirebaseAdmin } from '@/lib/firebase/admin';
+import { initializeFirebaseAdmin } from '../../../../lib/firebase/admin';
 
 /**
  * GET /api/firebase/diagnostics

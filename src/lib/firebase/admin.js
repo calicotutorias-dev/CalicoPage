@@ -24,15 +24,17 @@ export function initializeFirebaseAdmin() {
     }
 
     // Get credentials from environment
-    let projectId = process.env.FIREBASE_PROJECT_ID;
+    // FIREBASE_PROJECT_ID or NEXT_PUBLIC_FIREBASE_PROJECT_ID is the source of truth
+    let projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-    // Support GOOGLE_SERVICE_ACCOUNT_KEY JSON format
+    // Support GOOGLE_SERVICE_ACCOUNT_KEY JSON format for credentials
     const saKeyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     if (saKeyJson) {
       try {
         const sa = JSON.parse(saKeyJson);
+        // Only use SA project_id as fallback — env var takes precedence
         projectId = projectId || sa.project_id;
         clientEmail = clientEmail || sa.client_email;
         privateKey = privateKey || sa.private_key;

@@ -1,81 +1,44 @@
-import { API_URL } from '../../../config/api';
+import { authFetch } from '../authFetch';
+
+const API_URL = '/api';
 
 export const NotificationService = {
   getNotifications: async (userId) => {
-    try {
-      const response = await fetch(`${API_URL}/notifications/user/${userId}`);
-      if (!response.ok) return [];
-      const data = await response.json();
-      // Return the data directly - let the caller handle array extraction
-      return data;
-    } catch (error) {
-      console.error('Error getting notifications:', error);
-      return [];
-    }
+    if (!userId) return [];
+    const { ok, data } = await authFetch(`${API_URL}/notifications/user/${userId}`);
+    if (!ok || !data) return [];
+    return data;
   },
 
   getUnreadNotifications: async (userId) => {
-    try {
-      const response = await fetch(`${API_URL}/notifications/user/${userId}/unread`);
-      if (!response.ok) return [];
-      return await response.json();
-    } catch (error) {
-      console.error('Error getting unread notifications:', error);
-      return [];
-    }
+    if (!userId) return [];
+    const { ok, data } = await authFetch(`${API_URL}/notifications/user/${userId}/unread`);
+    if (!ok || !data) return [];
+    return data;
   },
 
   markAsRead: async (notificationId) => {
-    try {
-      const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
-        method: 'PUT'
-      });
-      return response.ok;
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      return false;
-    }
+    if (!notificationId) return false;
+    const { ok } = await authFetch(`${API_URL}/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+    return ok;
   },
 
-  // Métodos legacy para compatibilidad
   getTutorNotifications: async (email) => {
-    try {
-      const result = await NotificationService.getNotifications(email);
-      // Ensure we return an array
-      if (Array.isArray(result)) {
-        return result;
-      } else if (result && Array.isArray(result.notifications)) {
-        return result.notifications;
-      } else if (result && result.data && Array.isArray(result.data)) {
-        return result.data;
-      } else {
-        console.warn('Unexpected notification response format:', result);
-        return [];
-      }
-    } catch (error) {
-      console.error('Error getting tutor notifications:', error);
-      return [];
-    }
+    const result = await NotificationService.getNotifications(email);
+    if (Array.isArray(result)) return result;
+    if (result && Array.isArray(result.notifications)) return result.notifications;
+    if (result && result.data && Array.isArray(result.data)) return result.data;
+    return [];
   },
 
   getStudentNotifications: async (email) => {
-    try {
-      const result = await NotificationService.getNotifications(email);
-      // Ensure we return an array
-      if (Array.isArray(result)) {
-        return result;
-      } else if (result && Array.isArray(result.notifications)) {
-        return result.notifications;
-      } else if (result && result.data && Array.isArray(result.data)) {
-        return result.data;
-      } else {
-        console.warn('Unexpected notification response format:', result);
-        return [];
-      }
-    } catch (error) {
-      console.error('Error getting student notifications:', error);
-      return [];
-    }
+    const result = await NotificationService.getNotifications(email);
+    if (Array.isArray(result)) return result;
+    if (result && Array.isArray(result.notifications)) return result.notifications;
+    if (result && result.data && Array.isArray(result.data)) return result.data;
+    return [];
   },
 
   markNotificationAsRead: async (notificationId) => {
@@ -83,8 +46,6 @@ export const NotificationService = {
   },
 
   markAllAsRead: async (email, role) => {
-    // No hay endpoint directo en la lista para "marcar todas", iteramos o asumimos que no se puede por ahora
-    // O podríamos implementar un loop en el frontend
-    return true; 
-  }
+    return true;
+  },
 };

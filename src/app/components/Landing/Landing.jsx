@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Users, BookOpen, Award, Clock } from "lucide-react";
 import Logo from "../../../../public/CalicoLogo.png";
@@ -56,39 +57,39 @@ export default function Landing() {
             >
               {t('landing.header.termsAndConditions')}
             </a>
-            <button
+            <Link
               className={styles.privacyLink}
-              onClick={() => router.push(routes.PRIVACY_POLICY)}
+              href={routes.PRIVACY_POLICY}
             >
               {t('landing.header.privacyPolicy')}
-            </button>
+            </Link>
             {user.isLoggedIn ? (
-              <button
+              <Link
                 className={`${styles.btn} ${
                   scrolled ? styles.btnSecondaryScrolled : styles.btnSecondary
                 }`}
-                onClick={() => router.push(routes.PROFILE)}
+                href={routes.PROFILE}
               >
                 {t('landing.header.viewProfile')}
-              </button>
+              </Link>
             ) : (
               <>
-                <button
+                <Link
                   className={`${styles.btn} ${
                     scrolled ? styles.btnPrimaryScrolled : styles.btnPrimary
                   }`}
-                  onClick={() => router.push(routes.REGISTER)}
+                  href={routes.REGISTER}
                 >
                   {t('landing.header.signUp')}
-                </button>
-                <button
+                </Link>
+                <Link
                   className={`${styles.btn} ${
                     scrolled ? styles.btnSecondaryScrolled : styles.btnSecondary
                   }`}
-                  onClick={() => router.push(routes.LOGIN)}
+                  href={routes.LOGIN}
                 >
                   {t('landing.header.login')}
-                </button>
+                </Link>
               </>
             )}
           </div>
@@ -117,13 +118,13 @@ export default function Landing() {
               
               {/* CTA Buttons */}
               <div className={styles.heroCTAWrapper}>
-                <button className={styles.ctaButton} onClick={() => router.push(routes.HOME)}>
+                <Link className={styles.ctaButton} href={routes.HOME}>
                   <span>{t('landing.hero.cta.startLearning')}</span>
                   <span className={styles.ctaButtonIcon}>→</span>
-                </button>
-                <button className={styles.ctaButtonSecondary} onClick={() => router.push(routes.REGISTER)}>
+                </Link>
+                <Link className={styles.ctaButtonSecondary} href={routes.REGISTER}>
                   {t('landing.hero.cta.becomeTutor')}
-                </button>
+                </Link>
               </div>
             </div>
             
@@ -316,28 +317,28 @@ export default function Landing() {
                   </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => router.push(routes.PRIVACY_POLICY)} 
+                  <Link
+                    href={routes.PRIVACY_POLICY}
                     className={styles.footerLink}
                   >
                     {t('landing.footer.links.privacyPolicy')}
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => router.push(routes.HOME)} 
+                  <Link
+                    href={routes.HOME}
                     className={styles.footerLink}
                   >
                     {t('landing.footer.links.findTutors')}
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => router.push(routes.REGISTER)} 
+                  <Link
+                    href={routes.REGISTER}
                     className={styles.footerLink}
                   >
                     {t('landing.footer.links.register')}
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>

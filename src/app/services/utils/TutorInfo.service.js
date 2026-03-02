@@ -1,38 +1,25 @@
-import { API_URL } from '../../../config/api';
+import { authFetch } from '../authFetch';
+
+const API_URL = '/api';
 
 export async function getTutores() {
-  try {
-    const response = await fetch(`${API_URL}/tutors`);
-    if (!response.ok) throw new Error('Failed to fetch tutors');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching tutors:', error);
-    return [];
-  }
+  const { ok, data } = await authFetch(`${API_URL}/tutors`);
+  if (!ok || !data) return [];
+  return data;
 }
 
 export async function getTutorbyId(id) {
-  try {
-    const response = await fetch(`${API_URL}/tutors/${id}`);
-    if (!response.ok) throw new Error('Failed to fetch tutor');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching tutor:', error);
-    return null;
-  }
+  const { ok, data } = await authFetch(`${API_URL}/tutors/${id}`);
+  if (!ok || !data) return null;
+  return data;
 }
 
 export async function getFacultades() {
-  try {
-    const response = await fetch(`${API_URL}/faculties`);
-    if (!response.ok) throw new Error('Failed to fetch faculties');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching faculties:', error);
-    return [
-        {number: "105", name: "Artes y Humanidades"},
-        {number: "50", name: "Ingeniería"}, 
-        {number: "80", name: "Ciencias"}
-    ];
-  }
+  const { ok, data } = await authFetch(`${API_URL}/faculties`);
+  if (ok && data) return data;
+  return [
+    { number: '105', name: 'Artes y Humanidades' },
+    { number: '50', name: 'Ingeniería' },
+    { number: '80', name: 'Ciencias' },
+  ];
 }

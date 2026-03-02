@@ -18,7 +18,6 @@ import { useAuth } from '../../context/SecureAuthContext';
 import { useI18n } from '../../../lib/i18n';
 import { UserProfileService } from '../../services/utils/UserProfileService';
 import './Profile.css';
-import { set } from 'zod';
 
 const TUTOR_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdxeOSt5jjjSVtXY9amQRiXeufm65-11N4FMvJ96fcxyiN58A/viewform?usp=sharing&ouid=102056237631790140503'; 
 
@@ -176,67 +175,62 @@ const Profile = () => {
     const loadProfileData = async () => {
       try {
         setLoading(true);
-        
-        // Try to get user data using UserService (more reliable)
-        try {
-          const UserServiceModule = await import('../../services/core/UserService');
-          const UserService = UserServiceModule.UserService;
-          
-          // Try by UID first, then by email
-          if (user.uid) {
-            try {
-              const result = await UserService.getUserById(user.uid);
-              if (result) {
-                setUserData(result);
-              }
-            } catch (error) {
-              console.warn('Could not fetch user by UID, trying email:', error);
-            }
-          }
 
-        } catch (error) {
-          console.warn('Could not load User Service:', error);
+        // Run all data fetches in parallel
+        const promises = [];
+
+        // 1. User profile data
+        const userPromise = user.uid
+          ? UserService.getUserById(user.uid).catch((err) => {
+              console.warn('Could not fetch user by UID:', err);
+              return null;
+            })
+          : Promise.resolve(null);
+        promises.push(userPromise);
+
+        // 2. Tutor courses (only if tutor)
+        const tutorCoursesPromise = user.isTutor && user.uid
+          ? UserProfileService.getTutorCourses(user.uid).catch((err) => {
+              console.warn('Could not load tutor courses:', err);
+              return { success: false };
+            })
+          : Promise.resolve({ success: false });
+        promises.push(tutorCoursesPromise);
+
+        // 3. All courses map
+        const allCoursesPromise = UserService.getAllCourses().catch((err) => {
+          console.warn('Could not load courses:', err);
+          return null;
+        });
+        promises.push(allCoursesPromise);
+
+        const [userResult, coursesResult, allCoursesResult] = await Promise.all(promises);
+
+        if (userResult) {
+          setUserData(userResult);
         }
 
-        // Load tutor courses if user is a tutor
-        if (user.isTutor) {
-          try {
-            const coursesResult = await UserProfileService.getTutorCourses(user.uid);
-            if (coursesResult.success && coursesResult.data) {
-              setTutorCourses(Array.isArray(coursesResult.data) ? coursesResult.data : []);
-            }
-          } catch (error) {
-            console.warn('Could not load tutor courses:', error);
-          }
+        if (coursesResult?.success && coursesResult.data) {
+          setTutorCourses(Array.isArray(coursesResult.data) ? coursesResult.data : []);
         }
 
-        // Load all courses to map IDs to names
-        try {
-          const UserServiceModule = await import('../../services/core/UserService');
-          const UserService = UserServiceModule.UserService;
-          const allCoursesResult = await UserService.getAllCourses();
-          if (allCoursesResult && allCoursesResult.courses) {
-            const coursesArray = Array.isArray(allCoursesResult.courses) ? allCoursesResult.courses : [];
-            const coursesMap = new Map();
-            coursesArray.forEach(course => {
-              // Handle both string and object formats
-              if (typeof course === 'string') {
-                coursesMap.set(course, { id: course, nombre: course, name: course, codigo: course });
-              } else {
-                const courseId = course.id || course.codigo || course.nombre || course.name;
-                if (courseId) {
-                  coursesMap.set(courseId, course);
-                  // Also map by codigo if different
-                  if (course.codigo && course.codigo !== courseId) {
-                    coursesMap.set(course.codigo, course);
-                  }
+        if (allCoursesResult?.courses) {
+          const coursesArray = Array.isArray(allCoursesResult.courses) ? allCoursesResult.courses : [];
+          const coursesMap = new Map();
+          coursesArray.forEach(course => {
+            if (typeof course === 'string') {
+              coursesMap.set(course, { id: course, nombre: course, name: course, codigo: course });
+            } else {
+              const courseId = course.id || course.codigo || course.nombre || course.name;
+              if (courseId) {
+                coursesMap.set(courseId, course);
+                if (course.codigo && course.codigo !== courseId) {
+                  coursesMap.set(course.codigo, course);
                 }
               }
-            });
-            setAllCoursesMap(coursesMap);
-          }
-        } catch (error) {
-          console.warn('Could not load all courses for mapping:', error);
+            }
+          });
+          setAllCoursesMap(coursesMap);
         }
       } catch (error) {
         console.error('Error loading profile data:', error);
@@ -303,8 +297,6 @@ const Profile = () => {
       // Try UserService.updateUser first (uses UID)
       if (user.uid) {
         try {
-          const UserServiceModule = await import('../../services/core/UserService');
-          const UserService = UserServiceModule.UserService;
           const result = await UserService.updateUser(user.uid, formData);
           if (result.success && result.user) {
             const profile = result.user.profile || {};
