@@ -33,6 +33,8 @@
     "**/*.jsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/ISIS3710_202520_S1_E06_Back/**",
+    "src/ISIS3710_202520_S1_E06_Back"
   ]
 }

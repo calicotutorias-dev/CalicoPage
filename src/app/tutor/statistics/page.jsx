@@ -27,11 +27,10 @@ import { useI18n } from "../../../lib/i18n";
  * - Si no hay tutor payments para un curso, igualmente aparece en el filtro (cumple "aparezcan aunque no haya tutorías")
  * - En el historial se muestra siempre el email del estudiante (si solo hay studentId intenta consultar perfil)
  *
- * Nota: la URL base del backend usada para courses/tutors está hardcodeada como http://localhost:3001/api
- * Ajusta si necesitas otra base.
+ * Nota: la URL base del backend apunta a los endpoints internos del monolito (/api)
  */
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = "";
 
 export default function TutorStatistics() {
   const { user } = useAuth();
