@@ -31,29 +31,31 @@ export default function PaymentHistory({ courseQuery = '', startDate = null, end
   }, [user]);
 
   useEffect(() => {
-    // Determinar el email del usuario autenticado con fallback a localStorage (modo dev)
+    // Usar el UID del usuario autenticado (preferido) con fallback a email para compatibilidad
     let source = 'auth';
-    let email = user?.email || '';
-    if (!email && typeof window !== 'undefined') {
+    let studentId = user?.uid || user?.email || '';
+    
+    if (!studentId && typeof window !== 'undefined') {
       const lsCandidates = [
+        window.localStorage?.getItem?.('uid'),
         window.localStorage?.getItem?.('userEmail'),
         window.localStorage?.getItem?.('email'),
         window.localStorage?.getItem?.('mail')
       ].filter(Boolean);
       if (lsCandidates.length > 0) {
-        email = lsCandidates[0];
+        studentId = lsCandidates[0];
         source = 'localStorage';
       }
     }
 
-    if (!email) return;
+    if (!studentId) return;
     let mounted = true;
 
     (async () => {
       try {
         setLoading(true);
-        console.log('[PaymentHistory] Fetching payments for:', email, 'source:', source);
-        const list = await PaymentService.getPaymentsByStudent(email);
+        console.log('[PaymentHistory] Fetching payments for studentId:', studentId, 'source:', source);
+        const list = await PaymentService.getPaymentsByStudent(studentId);
         console.log('[PaymentHistory] Payments fetched:', list.length);
         if (mounted) setPayments(list);
       } catch (e) {
@@ -65,7 +67,7 @@ export default function PaymentHistory({ courseQuery = '', startDate = null, end
     })();
 
     return () => { mounted = false; };
-  }, [user?.email]);
+  }, [user?.uid, user?.email]);
 
   // Filtrado por materia y rango de fechas en el cliente para sincronizar con los filtros de la vista
   const filtered = useMemo(() => {
